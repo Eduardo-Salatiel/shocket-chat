@@ -6,7 +6,7 @@ const usuarios = new Usuarios();
 
 io.on("connection", (client) => {
   client.on("entrarChat", (usuario, callback) => {
-    if (!usuario.nombre || usuario.sala) {
+    if (!usuario.nombre || !usuario.sala) {
       return callback({
         err: true,
         mensaje: "El nombre/sala es necesario",
@@ -23,11 +23,11 @@ io.on("connection", (client) => {
 
     client.broadcast
       .to(usuario.sala)
-      .emit("listaPersonas", usuarios.getPersonasPorSalas(data.sala));
+      .emit("listaPersonas", usuarios.getPersonasPorSalas(usuario.sala));
     callback(usuarios.getPersonasPorSalas(usuario.sala));
   });
 
-  client.on("disconect", () => {
+  client.on("disconnect", () => {
     let personaBorrada = usuarios.borrarPersona(client.id);
 
     client.broadcast
@@ -42,11 +42,13 @@ io.on("connection", (client) => {
       .emit("listaPersonas", usuarios.getPersonasPorSalas(personaBorrada.sala));
   });
 
-  client.on("crearMensaje", (data) => {
+  client.on("crearMensaje", (data, callback) => {
     let persona = usuarios.getPersona(client.id);
     let mensaje = crearMensaje(persona.nombre, data.mensaje);
 
     client.broadcast.to(persona.sala).emit("crearMensaje", mensaje);
+
+    callback(mensaje)
   });
 
   client.on("mensajePrivado", (data) => {
